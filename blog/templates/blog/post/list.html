@@ -1,0 +1,17 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}
+  Мій Блог
+{% endblock %}
+
+{% block content %}
+  <h1 class="border-bottom border-2 pb-2">Мій Блог</h1>
+  {% for post in posts %}
+    <h2>
+      <a class="text-decoration-none" href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+    </h2>
+    <p class="date fst-italic text-secondary">Опубліковано {{ post.publish }} автором {{ post.author }}</p>
+    {{ post.body|truncatewords:30|linebreaks }}
+  {% endfor %}
+  {% include "pagination.html" with page=page_obj %}
+{% endblock content %}
