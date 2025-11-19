@@ -1,18 +1,18 @@
+from django.db.models import Count
 from django.core.mail import send_mail
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.shortcuts import get_object_or_404, render
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import Http404
+from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 from taggit.models import Tag
 
-from .forms import CommentForm, EmailPostForm
-from .models import Comment, Post
-
-# Create your views here.
+from .forms import EmailPostForm, CommentForm
+from .models import Post, Comment
 
 class PostListView(ListView):
     """Альтернативне подання списку постів"""
-    queryset=Post.published.all()
+    queryset = Post.published.all()
     context_object_name = 'posts'
     paginate_by = 3
     template_name = 'blog/post/list.html'
@@ -32,30 +32,29 @@ def post_list(request, tag_slug=None):
         posts = paginator.page(paginator.num_pages)
     except PageNotAnInteger:
         posts = paginator.page(1)
-    return render(
-        request,
-        'blog/post/list.html',
-        {'posts': posts, 'tag': tag}
-    )
+    return render(request, 'blog/post/list.html', {'posts': posts, 'tag': tag})
 
 def post_detail(request, year, month, day, post):
     post = get_object_or_404(
-        Post,
+        Post, 
         status=Post.Status.PUBLISHED,
         slug=post,
         publish__year=year,
         publish__month=month,
-        publish__day=day,
+        publish__day=day
     )
-    # Список активних коментарів до посту
+    # Список активних коментарів до цього посту
     comments = post.comments.filter(active=True)
-    # Форма для коментарів
+    # Форма для коментування користувачами
     form = CommentForm()
-    return render(
-        request,
-        'blog/post/detail.html',
-        {'post': post, 'comments': comments, 'form': form}
-    )
+    # Список тегів до посту
+    tags = post.tags.all()
+    # Список подібних постів
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:3]
+    return render(request, 'blog/post/detail.html', 
+                  {'post': post, 'comments': comments, 'form': form, 'tags': tags, 'similar_posts': similar_posts})
 
 def post_share(request, post_id):
     # Отримати пост за id
@@ -69,11 +68,11 @@ def post_share(request, post_id):
             cd = form.cleaned_data
             # відправити електронного листа
             post_url = request.build_absolute_uri(post.get_absolute_url())
-            subject = f"{cd['name']}  рекомендує Вам прочитати {post.title}"
+            subject = f"{cd['name']} рекомендує Вам прочитати {post.title}"
             message = f"Прочитай {post.title} за покликанням {post_url}\n\n" \
                       f"Коментар від {cd['name']}: {cd['comments']}"
-            send_mail(subject, message, 'blog@mail.com', [cd['to']])
-            sent = True
+            send_mail(subject, message, 'blog@fake.mail', [cd['to']])
+            sent = True  
     else:
         form = EmailPostForm()
     return render(request, 'blog/post/share.html', {'post': post, 'form': form, 'sent': sent})
@@ -85,10 +84,18 @@ def post_comment(request, post_id):
     # Коментар було відправлено
     form = CommentForm(data=request.POST)
     if form.is_valid():
-        # Створити об'єкт Comment, не зберігаючи його в БД
+        # Створити об'єкт Comment
         comment = form.save(commit=False)
         # Призначити пост коментарю
         comment.post = post
         # Зберегти коментар в БД
         comment.save()
-    return render(request, 'blog/post/comment.html', {'post': post, 'form': form, 'comment': comment})
+    return render(
+        request,
+        "blog/post/comment.html",
+        context={
+            'post': post,
+            'form': form,
+            'comment': comment,
+        }
+    )

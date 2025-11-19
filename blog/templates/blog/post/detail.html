@@ -1,13 +1,41 @@
-
 {% extends "blog/base.html" %}
 
-{% block title %}Додати коментар{% endblock  %}
+{% block title %}{{ post.title }}{% endblock  %}
 
 {% block content %}
-  {% if comment %}
-    <h2>Ваш коментар було додано</h2>
-    <p><a href="{{ post.get_absolute_url }}">Повернутись на сторінку посту</a></p>
-  {% else %}
+    <h1 class="border-bottom border-2 pb-2">{{ post.title }}</h1>
+    {% if tags %}
+        <p>
+            {% for tag in tags %}
+                <a href="{% url 'blog:post_list_by_tag' tag.slug %}" class="text-decoration-none">{{ tag.name }}</a>
+                {% if not forloop.last %}, {% endif %}           
+            {% endfor %}
+        </p>
+    {% endif %}
+    <p class="fst-italic text-secondary">
+        Опубліковано {{ post.publish }} автором {{ post.author }}
+    </p>
+    {{ post.body|linebreaks }}
+    <p>
+        <a href="{% url 'blog:post_share' post.id %}" class="text-decoration-none">Пошарити пост</a>
+    </p>
+    {% with comments.count as total_comments %}
+        <h2>Коментарів: {{ total_comments }}</h2>
+    {% endwith %}
+    {% for comment in comments %}
+        <div class="comment border-bottom border-1 mb-2">
+            <p class="info fw-bold">
+                Коментар №{{ forloop.counter }} від {{ comment.name }}
+            </p>
+            <div class="ms-5">
+                {{ comment.body|linebreaks }}
+            </div>
+            <p class="fw-light fst-italic text-end" style="font-size: 0.8rem;">
+                {{ comment.created }}
+            </p>
+        </div>
+    {% empty %}
+        <p>Коментарі відсутні</p>
+    {% endfor %}
     {% include "blog/post/includes/comment_form.html" %}
-  {% endif %}
 {% endblock content %}
