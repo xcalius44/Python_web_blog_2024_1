@@ -1,0 +1,19 @@
+{% extends "recipes/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Поширити рецепт{% endblock %}
+
+{% block content %}
+  {% if sent %}
+    <h1>E-mail було успішно надіслано</h1>
+    <p>"{{ recipe.title }}" було успішно надіслано {{ form.cleaned_data.to }}.</p>
+    <a href="{{ recipe.get_absolute_url }}" class="text-decoration-none">Повернутися до рецепту</a>
+  {% else %}
+    <h1>Пошарити "{{ recipe.title }}" електронною поштою</h1>
+    <form method="post">
+      {{ form|crispy }}
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Надіслати e-mail</button>
+    </form>
+  {% endif %}
+{% endblock content %}

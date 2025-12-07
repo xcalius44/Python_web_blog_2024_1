@@ -19,5 +19,6 @@ from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('blog/', include('blog.urls', namespace='blog')),
+    path('', include(('recipes.urls', 'recipes'), namespace='recipes')),  # homepage points to recipes app
 ]
+

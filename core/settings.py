@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "blog",
+    "recipes",
     "crispy_forms",
     "crispy_bootstrap5",
     'taggit',

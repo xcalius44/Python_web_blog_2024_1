@@ -1,0 +1,34 @@
+{% extends "recipes/base.html" %}
+
+{% block title %}Рецепти{% endblock %}
+
+{% block content %}
+    <h1 class="border-bottom border-2 pb-2">Рецепти</h1>
+    {% if tag %}
+        <h2>Рецепти з тегом "{{ tag.name }}"</h2>
+    {% endif %}
+    {% for recipe in recipes %}
+        <h2>
+            <a href="{{ recipe.get_absolute_url }}" class="text-decoration-none">
+                {{ recipe.title }}
+            </a>
+        </h2>
+        {% with recipe.tags.all as tags %}
+            {% if tags %}
+                <p>
+                    {% for tag in tags %}
+                        <a href="{% url 'recipes:recipe_list_by_tag' tag.slug %}" class="text-decoration-none">
+                            {{ tag.name }}
+                        </a>
+                        {% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+            {% endif %}
+        {% endwith %}
+        <p class="fst-italic text-secondary">
+            Опубліковано {{ recipe.publish }} автором {{ recipe.author }}
+        </p>
+        {{ recipe.ingredients|truncatewords:20|linebreaks }}
+    {% endfor %}
+    {% include "pagination.html" with page=recipes %}
+{% endblock content %}

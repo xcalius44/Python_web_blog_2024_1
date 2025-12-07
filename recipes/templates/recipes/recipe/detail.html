@@ -1,0 +1,61 @@
+{% extends "recipes/base.html" %}
+
+{% block title %}{{ recipe.title }}{% endblock %}
+
+{% block content %}
+    <h1 class="border-bottom border-2 pb-2">{{ recipe.title }}</h1>
+    {% if tags %}
+        <p>
+            {% for tag in tags %}
+                <a href="{% url 'recipes:recipe_list_by_tag' tag.slug %}" class="text-decoration-none">{{ tag.name }}</a>
+                {% if not forloop.last %}, {% endif %}           
+            {% endfor %}
+        </p>
+    {% endif %}
+    <p class="fst-italic text-secondary">
+        Опубліковано {{ recipe.publish }} автором {{ recipe.author }}
+    </p>
+
+    <h3>Інгредієнти</h3>
+    {{ recipe.ingredients|linebreaks }}
+
+    <h3>Приготування</h3>
+    {{ recipe.instructions|linebreaks }}
+
+<h3>Оцінити рецепт</h3>
+<form method="post" action="{% url 'recipes:rate_recipe' recipe.id %}">
+    {% csrf_token %}
+    <select name="rating" class="form-select w-auto d-inline">
+        <option value="1">⭐</option>
+        <option value="2">⭐⭐</option>
+        <option value="3">⭐⭐⭐</option>
+        <option value="4">⭐⭐⭐⭐</option>
+        <option value="5">⭐⭐⭐⭐⭐</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Надіслати</button>
+</form>
+
+<p class="mt-2">
+    Середня оцінка: {{ recipe.rating|floatformat:1 }} ({{ recipe.rating_count }} голосів)
+</p>
+
+    {% with comments.count as total_comments %}
+        <h2>Коментарів: {{ total_comments }}</h2>
+    {% endwith %}
+    {% for comment in comments %}
+        <div class="comment border-bottom border-1 mb-2">
+            <p class="info fw-bold">
+                Коментар №{{ forloop.counter }} від {{ comment.name }}
+            </p>
+            <div class="ms-5">
+                {{ comment.body|linebreaks }}
+            </div>
+            <p class="fw-light fst-italic text-end" style="font-size: 0.8rem;">
+                {{ comment.created }}
+            </p>
+        </div>
+    {% empty %}
+        <p>Коментарі відсутні</p>
+    {% endfor %}
+    {% include "recipes/recipe/includes/comment_form.html" %}
+{% endblock content %}
