@@ -1,18 +1,22 @@
 <nav aria-label="Page navigation" class="d-flex justify-content-center">
   <ul class="pagination">
     {% if recipes.has_previous %}
-    <li class="page-item">
-      <a class="page-link" href="?page={{ recipes.previous_page_number }}">Попередня</a>
+    <li class="page-item disabled">
+      <span class="page-link">
+        Сторінка {{ recipes.number }} з {{ recipes.paginator.num_pages }}
+      </span>
     </li>
     {% endif %}
-    <li class="page-item">
-      <a class="page-link" href="#">
-        {{ recipes.number }} з {{ recipes.paginator.num_pages }}
-      </a>
+    <li class="page-item disabled">
+      <span class="page-link">
+        Сторінка {{ recipes.number }} з {{ recipes.paginator.num_pages }}
+      </span>
     </li>
     {% if recipes.has_next %}
-    <li class="page-item">
-      <a class="page-link" href="?page={{ recipes.next_page_number }}">Наступна</a>
+    <li class="page-item disabled">
+      <span class="page-link">
+        Сторінка {{ recipes.number }} з {{ recipes.paginator.num_pages }}
+      </span>
     </li>
     {% endif %}
   </ul>

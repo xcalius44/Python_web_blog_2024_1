@@ -4,6 +4,14 @@ from django.urls import reverse
 from django.utils import timezone
 from taggit.managers import TaggableManager
 
+class Rating(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey("Recipe", on_delete=models.CASCADE, related_name="ratings")
+    value = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = ("user", "recipe")
+
 # Custom manager
 class PublishedManager(models.Manager):
     def get_queryset(self):
@@ -24,12 +32,13 @@ class Recipe(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=2, choices=Status, default=Status.DRAFT)
-
+    
+    saved_by = models.ManyToManyField(User, related_name="saved_recipes", blank=True)
     rating = models.FloatField(default=0, help_text="Average rating")
     rating_count = models.IntegerField(default=0, help_text="Number of ratings")
     calories = models.IntegerField(null=True, blank=True, help_text="Calories per serving")
     cooking_time = models.IntegerField(null=True, blank=True, help_text="Cooking time in minutes")
-    # popularity = models.IntegerField(default=0, help_text="Used for ordering popular recipes")
+    popularity = models.IntegerField(default=0, help_text="Used for ordering popular recipes")
 
     objects = models.Manager()
     published = PublishedManager()

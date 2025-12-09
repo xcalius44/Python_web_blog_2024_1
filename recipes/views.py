@@ -6,18 +6,19 @@ from taggit.models import Tag
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
+from django.db.models import Q
+from django.contrib.auth.models import User
 
 
 from .forms import CommentForm
-from .models import Recipe
+from .models import Recipe, Rating
 
 # --- List view (paginated) ---
 class RecipeListView(ListView):
     queryset = Recipe.published.all()
     context_object_name = 'recipes'
-    paginate_by = 3
+    paginate_by = 20   # show 20 big cards per page
     template_name = 'recipes/recipe/list.html'
-
 
 # --- Homepage (popular recipes) ---
 def home(request):
@@ -33,7 +34,11 @@ def recipe_search(request):
 
     # Keyword search
     if query:
-        recipes = recipes.filter(title__icontains=query)
+        recipes = recipes.filter(
+            Q(title__icontains=query) |
+            Q(ingredients__icontains=query) |
+            Q(instructions__icontains=query)
+        )
 
     # Tag filters (checkboxes in template)
     selected_tags = request.GET.getlist('tags')
@@ -46,7 +51,12 @@ def recipe_search(request):
     return render(
         request,
         'recipes/recipe/search.html',
-        {'recipes': recipes, 'query': query, 'all_tags': all_tags, 'selected_tags': selected_tags}
+        {
+            'recipes': recipes,
+            'query': query,
+            'all_tags': all_tags,
+            'selected_tags': selected_tags
+        }
     )
 
 
@@ -123,14 +133,27 @@ def profile(request):
 def dashboard(request):
     return render(request, 'recipes/dashboard.html')
 
-@require_POST
 @login_required
+@require_POST
 def rate_recipe(request, recipe_id):
     recipe = get_object_or_404(Recipe, id=recipe_id, status=Recipe.Status.PUBLISHED)
-    rating_value = int(request.POST.get('rating', 0))
-    if 1 <= rating_value <= 5:
-        total = recipe.rating * recipe.rating_count
-        recipe.rating_count += 1
-        recipe.rating = (total + rating_value) / recipe.rating_count
+    value = int(request.POST.get('rating', 0))
+    if 1 <= value <= 5:
+        rating, created = Rating.objects.update_or_create(
+            user=request.user,
+            recipe=recipe,
+            defaults={'value': value}
+        )
+        # Recalculate average
+        ratings = recipe.ratings.all()
+        recipe.rating_count = ratings.count()
+        recipe.rating = sum(r.value for r in ratings) / recipe.rating_count
         recipe.save()
+    return redirect(recipe.get_absolute_url())
+
+@login_required
+@require_POST
+def save_recipe(request, recipe_id):
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    recipe.saved_by.add(request.user)
     return redirect(recipe.get_absolute_url())

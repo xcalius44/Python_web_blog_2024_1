@@ -1,0 +1,7 @@
+.recipe-card {
+  width: 70%;         /* centered, not full width */
+  min-height: 90vh;   /* nearly full screen height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* vertically center content */
+}

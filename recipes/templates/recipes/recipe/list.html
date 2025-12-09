@@ -1,34 +1,37 @@
-{% extends "recipes/base.html" %}
-
-{% block title %}Рецепти{% endblock %}
-
-{% block content %}
-    <h1 class="border-bottom border-2 pb-2">Рецепти</h1>
-    {% if tag %}
-        <h2>Рецепти з тегом "{{ tag.name }}"</h2>
-    {% endif %}
-    {% for recipe in recipes %}
-        <h2>
-            <a href="{{ recipe.get_absolute_url }}" class="text-decoration-none">
-                {{ recipe.title }}
-            </a>
+{% for recipe in recipes %}
+  <div class="d-flex justify-content-center">
+    <div class="card recipe-card my-5">
+      {% if recipe.image %}
+        <img src="{{ recipe.image.url }}" class="card-img-top" alt="{{ recipe.title }}">
+      {% endif %}
+      <div class="card-body">
+        <h2 class="card-title text-center">
+          <a href="{{ recipe.get_absolute_url }}" class="text-decoration-none">
+            {{ recipe.title }}
+          </a>
         </h2>
-        {% with recipe.tags.all as tags %}
-            {% if tags %}
-                <p>
-                    {% for tag in tags %}
-                        <a href="{% url 'recipes:recipe_list_by_tag' tag.slug %}" class="text-decoration-none">
-                            {{ tag.name }}
-                        </a>
-                        {% if not forloop.last %}, {% endif %}
-                    {% endfor %}
-                </p>
-            {% endif %}
-        {% endwith %}
-        <p class="fst-italic text-secondary">
-            Опубліковано {{ recipe.publish }} автором {{ recipe.author }}
+        <p class="fst-italic text-secondary text-center">
+          Опубліковано {{ recipe.publish|date:"d.m.Y H:i" }} автором {{ recipe.author }}
         </p>
-        {{ recipe.ingredients|truncatewords:20|linebreaks }}
-    {% endfor %}
-    {% include "pagination.html" with page=recipes %}
-{% endblock content %}
+        <p>
+          <strong>Калорійність:</strong> {{ recipe.calories|default:"—" }} |
+          <strong>Час:</strong> {{ recipe.cooking_time|default:"—" }} хв
+        </p>
+        <p>
+          {% if recipe.rating_count > 0 %}
+            ⭐ {{ recipe.rating|floatformat:1 }} ({{ recipe.rating_count }} голосів)
+          {% else %}
+            <em>Ще немає оцінок</em>
+          {% endif %}
+        </p>
+        <p class="card-text">
+          {{ recipe.instructions|truncatewords:50|linebreaks }}
+        </p>
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <div class="alert alert-warning">Рецептів не знайдено.</div>
+{% endfor %}
+
+{% include "pagination.html" with page=recipes %}

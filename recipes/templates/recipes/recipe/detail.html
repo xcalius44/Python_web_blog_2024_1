@@ -7,55 +7,81 @@
     {% if tags %}
         <p>
             {% for tag in tags %}
-                <a href="{% url 'recipes:recipe_list_by_tag' tag.slug %}" class="text-decoration-none">{{ tag.name }}</a>
-                {% if not forloop.last %}, {% endif %}           
+                <a href="{% url 'recipes:recipe_list_by_tag' tag.slug %}" class="badge bg-secondary text-decoration-none">
+                    {{ tag.name }}
+                </a>
             {% endfor %}
+
         </p>
     {% endif %}
-    <p class="fst-italic text-secondary">
-        Опубліковано {{ recipe.publish }} автором {{ recipe.author }}
-    </p>
 
-    <h3>Інгредієнти</h3>
+    <p class="fst-italic text-secondary">
+        Опубліковано {{ recipe.publish|date:"d.m.Y H:i" }} автором {{ recipe.author }}
+    </p>
+    <p><strong>Калорійність:</strong> {{ recipe.calories|default:"—" }} кал</p>
+<p><strong>Час приготування:</strong> {{ recipe.cooking_time|default:"—" }} хв</p>
+
+    <h3 class="mt-4">Інгредієнти</h3>
+
     {{ recipe.ingredients|linebreaks }}
 
-    <h3>Приготування</h3>
+    <h3 class="mt-4">Приготування</h3>
+
     {{ recipe.instructions|linebreaks }}
 
-<h3>Оцінити рецепт</h3>
+<h3 class="mt-4">Оцінити рецепт</h3>
+
 <form method="post" action="{% url 'recipes:rate_recipe' recipe.id %}">
     {% csrf_token %}
-    <select name="rating" class="form-select w-auto d-inline">
-        <option value="1">⭐</option>
-        <option value="2">⭐⭐</option>
-        <option value="3">⭐⭐⭐</option>
-        <option value="4">⭐⭐⭐⭐</option>
-        <option value="5">⭐⭐⭐⭐⭐</option>
-    </select>
+    <fieldset class="rating">
+        <legend class="form-label">Оберіть оцінку:</legend>
+        {% for i in "12345" %}
+            <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}">
+            <label for="star{{ i }}">⭐</label>
+        {% endfor %}
+    </fieldset>
     <button type="submit" class="btn btn-primary btn-sm">Надіслати</button>
 </form>
 
-<p class="mt-2">
+<p class="mt-4">
     Середня оцінка: {{ recipe.rating|floatformat:1 }} ({{ recipe.rating_count }} голосів)
 </p>
 
+{% if user.is_authenticated %}
+    {% if recipe in user.saved_recipes.all %}
+        <p class="text-success">Ви вже зберегли цей рецепт</p>
+    {% else %}
+        <form method="post" action="{% url 'recipes:save_recipe' recipe.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-success btn-sm">
+                Зберегти рецепт
+            </button>
+        </form>
+    {% endif %}
+{% endif %}
+
+
+<h3 class="mt-4">Схожі рецепти</h3>
+<li class="list-group-item list-group-item-action">
+    <a href="{{ r.get_absolute_url }}" class="text-decoration-none">{{ r.title }}</a>
+</li>
     {% with comments.count as total_comments %}
-        <h2>Коментарів: {{ total_comments }}</h2>
+    <h3 class="mt-4">Коментарів: {{ total_comments }}</h3>
     {% endwith %}
+
     {% for comment in comments %}
-        <div class="comment border-bottom border-1 mb-2">
-            <p class="info fw-bold">
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="card-subtitle mb-2 text-muted">
                 Коментар №{{ forloop.counter }} від {{ comment.name }}
-            </p>
-            <div class="ms-5">
-                {{ comment.body|linebreaks }}
-            </div>
-            <p class="fw-light fst-italic text-end" style="font-size: 0.8rem;">
-                {{ comment.created }}
-            </p>
+            </h6>
+            <p class="card-text">{{ comment.body|linebreaks }}</p>
+            <small class="text-muted">{{ comment.created|date:"d.m.Y H:i" }}</small>
         </div>
-    {% empty %}
-        <p>Коментарі відсутні</p>
-    {% endfor %}
+    </div>
+{% empty %}
+    <p>Коментарі відсутні</p>
+{% endfor %}
+
     {% include "recipes/recipe/includes/comment_form.html" %}
 {% endblock content %}
